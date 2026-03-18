@@ -29,12 +29,16 @@ export async function handleGetItems(c: Context<{ Bindings: Env }>) {
   if (!user) return c.json({ error: 'Unauthorized' }, 401)
 
   const isOwner = String(user.id) === c.env.OWNER_TELEGRAM_ID
+  const claimed_count = await getClaimedCount(c.env.DB)
 
-  const [items, claimed_count] = await Promise.all([
-    isOwner ? getAllItems(c.env.DB) : getUnclaimedItems(c.env.DB),
-    getClaimedCount(c.env.DB),
-  ])
-  return c.json({ is_owner: isOwner, claimed_count, items })
+  if (isOwner) {
+    // Strip claimer_id — owner sees count only, not who claimed what
+    const items = (await getAllItems(c.env.DB)).map(({ claimer_id: _c, ...item }) => item)
+    return c.json({ is_owner: true, claimed_count, items })
+  }
+
+  const items = await getUnclaimedItems(c.env.DB)
+  return c.json({ is_owner: false, claimed_count, items })
 }
 
 export async function handleAddItem(c: Context<{ Bindings: Env }>) {
@@ -56,9 +60,21 @@ export async function handleAddItem(c: Context<{ Bindings: Env }>) {
     return c.json({ error: 'invalid price format, use "50" or "50-100"' }, 400)
   }
 
+  const linkStr = body.link?.trim() || null
+  if (linkStr) {
+    try {
+      const url = new URL(linkStr)
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+        return c.json({ error: 'link must be an http or https URL' }, 400)
+      }
+    } catch {
+      return c.json({ error: 'link must be a valid URL' }, 400)
+    }
+  }
+
   const item = await addItem(c.env.DB, {
     name: body.name.trim(),
-    link: body.link?.trim() || null,
+    link: linkStr,
     image_url: null,
     price_min: parsed?.min ?? null,
     price_max: parsed?.max ?? null,

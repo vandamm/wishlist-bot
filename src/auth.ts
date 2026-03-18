@@ -42,6 +42,9 @@ export async function validateInitData(
 
   if (expectedHash !== hash) return { valid: false }
 
+  const authDate = Number(params.get('auth_date') ?? 0)
+  if (Date.now() / 1000 - authDate > 86400) return { valid: false }
+
   const userStr = params.get('user')
   if (!userStr) return { valid: false }
 

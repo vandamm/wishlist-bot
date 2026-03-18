@@ -137,7 +137,7 @@ function renderOwner() {
         <div class="item-name">\${escHtml(item.name)}</div>
         <div class="item-meta">
           \${formatPrice(item.price_min, item.price_max)}
-          \${item.link ? \` · <a href="\${escHtml(item.link)}" target="_blank">ссылка</a>\` : ''}
+          \${item.link ? \` · <a href="\${escHtml(item.link)}" target="_blank" rel="noopener noreferrer">ссылка</a>\` : ''}
         </div>
       </div>
       <button class="btn-delete" data-delete="\${item.id}" title="Удалить">✕</button>
@@ -178,7 +178,7 @@ function renderFriend() {
           <div class="item-name">\${escHtml(item.name)}</div>
           <div class="item-meta">
             \${formatPrice(item.price_min, item.price_max)}
-            \${item.link ? \` · <a href="\${escHtml(item.link)}" target="_blank">ссылка</a>\` : ''}
+            \${item.link ? \` · <a href="\${escHtml(item.link)}" target="_blank" rel="noopener noreferrer">ссылка</a>\` : ''}
           </div>
         </div>
         \${isMine
@@ -252,7 +252,7 @@ function attachEvents() {
         const isMine = state.myClaimedIds.has(item.id);
         return \`<div class="item" data-id="\${item.id}">
           <div class="item-img">\${item.image_url ? \`<img src="\${escHtml(item.image_url)}" alt="" onerror="this.parentNode.innerHTML='\${emojiFor(item.name)}'"/>\` : emojiFor(item.name)}</div>
-          <div class="item-body"><div class="item-name">\${escHtml(item.name)}</div><div class="item-meta">\${formatPrice(item.price_min, item.price_max)}\${item.link ? \` · <a href="\${escHtml(item.link)}" target="_blank">ссылка</a>\` : ''}</div></div>
+          <div class="item-body"><div class="item-name">\${escHtml(item.name)}</div><div class="item-meta">\${formatPrice(item.price_min, item.price_max)}\${item.link ? \` · <a href="\${escHtml(item.link)}" target="_blank" rel="noopener noreferrer">ссылка</a>\` : ''}</div></div>
           \${isMine ? \`<button class="btn-unclaim" data-unclaim="\${item.id}">Отменить ↩</button>\` : \`<button class="btn-claim" data-claim="\${item.id}">Подарю!</button>\`}
         </div>\`;
       }).join('');
