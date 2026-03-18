@@ -1,0 +1,13 @@
+name = "wishlist-bot"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "wishlist"
+database_id = "placeholder-replace-after-create"
+
+# Secrets (set with `wrangler secret put`):
+# TELEGRAM_BOT_TOKEN
+# OWNER_TELEGRAM_ID
