@@ -86,7 +86,7 @@ export async function handleDeleteItem(c: Context<{ Bindings: Env }>) {
   if (String(user.id) !== c.env.OWNER_TELEGRAM_ID) {
     return c.json({ error: 'Forbidden' }, 403)
   }
-  const id = c.req.param('id')
+  const id = c.req.param('id') ?? ''
   const deleted = await deleteItem(c.env.DB, id)
   if (!deleted) return c.json({ error: 'Not found' }, 404)
   return c.json({ ok: true })

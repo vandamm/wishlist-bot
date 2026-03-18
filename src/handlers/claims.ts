@@ -21,7 +21,7 @@ export async function handleClaim(c: Context<{ Bindings: Env }>) {
     return c.json({ error: 'Owner cannot claim gifts' }, 403)
   }
 
-  const id = c.req.param('id')
+  const id = c.req.param('id') ?? ''
   const result = await claimItem(c.env.DB, id, user.id, user.username ?? null)
 
   if (result.conflict) {
@@ -34,7 +34,7 @@ export async function handleUnclaim(c: Context<{ Bindings: Env }>) {
   const user = await getUser(c)
   if (!user) return c.json({ error: 'Unauthorized' }, 401)
 
-  const id = c.req.param('id')
+  const id = c.req.param('id') ?? ''
   const unclaimed = await unclaimItem(c.env.DB, id, user.id)
   if (!unclaimed) return c.json({ error: 'Not found or not your claim' }, 404)
   return c.json({ ok: true })
