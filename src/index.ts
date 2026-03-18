@@ -1,7 +1,8 @@
 // src/index.ts
 import { Hono } from 'hono'
 import type { Env } from './types'
-import './types' // ensures ContextVariableMap augmentation is applied
+
+export type { Env }
 import { validateInitData } from './auth'
 import { handleGetItems, handleAddItem, handleDeleteItem } from './handlers/items'
 import { handleClaim, handleUnclaim } from './handlers/claims'
