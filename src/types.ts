@@ -1,11 +1,7 @@
-// src/types.ts - standalone version (no import from auth.ts yet)
 import type {} from 'hono'
+import type { TelegramUser } from './auth'
 
-export interface TelegramUser {
-  id: number
-  username?: string
-  first_name?: string
-}
+export type { TelegramUser }
 
 export interface Env {
   DB: D1Database
@@ -13,7 +9,6 @@ export interface Env {
   OWNER_TELEGRAM_ID: string
 }
 
-// Extend Hono context to carry the authenticated user
 declare module 'hono' {
   interface ContextVariableMap {
     user: TelegramUser
