@@ -4,12 +4,8 @@ import { claimItem, unclaimItem } from '../db'
 import { validateInitData } from '../auth'
 
 async function getUser(c: Context<{ Bindings: Env }>) {
-  try {
-    const existing = c.get('user')
-    if (existing) return existing
-  } catch {
-    // not set
-  }
+  const existing = c.get('user')
+  if (existing) return existing
   const initData = c.req.header('X-Telegram-Init-Data') ?? ''
   const result = await validateInitData(initData, c.env.TELEGRAM_BOT_TOKEN)
   if (!result.valid || !result.user) return null
