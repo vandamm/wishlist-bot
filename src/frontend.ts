@@ -114,15 +114,6 @@ async function loadItems() {
   state.isOwner = data.is_owner;
   state.claimedCount = data.claimed_count;
   state.items = data.items;
-  if (!state.isOwner) {
-    state.myClaimedIds = new Set(
-      tg.initDataUnsafe?.user?.id
-        ? [] // populated from server — items returned are only unclaimed OR claimed by this user
-        : []
-    );
-    // Mark items where we detect claim button should be "undo" by checking response
-    // (friend response only returns unclaimed items — we track locally which we claimed this session)
-  }
   // Set slider max to highest price
   const maxPrice = Math.max(100, ...state.items.map(i => i.price_max ?? i.price_min ?? 0).filter(Boolean));
   state.budget = maxPrice;
@@ -139,7 +130,7 @@ function renderOwner() {
     <div class="item" data-id="\${item.id}">
       <div class="item-img">
         \${item.image_url
-          ? \`<img src="\${item.image_url}" alt="" onerror="this.parentNode.innerHTML='\${emojiFor(item.name)}'"/>\`
+          ? \`<img src="\${escHtml(item.image_url)}" alt="" onerror="this.parentNode.innerHTML='\${emojiFor(item.name)}'"/>\`
           : emojiFor(item.name)}
       </div>
       <div class="item-body">
@@ -180,7 +171,7 @@ function renderFriend() {
       <div class="item" data-id="\${item.id}">
         <div class="item-img">
           \${item.image_url
-            ? \`<img src="\${item.image_url}" alt="" onerror="this.parentNode.innerHTML='\${emojiFor(item.name)}'"/>\`
+            ? \`<img src="\${escHtml(item.image_url)}" alt="" onerror="this.parentNode.innerHTML='\${emojiFor(item.name)}'"/>\`
             : emojiFor(item.name)}
         </div>
         <div class="item-body">
@@ -260,7 +251,7 @@ function attachEvents() {
       const itemsHtml = visible.map(item => {
         const isMine = state.myClaimedIds.has(item.id);
         return \`<div class="item" data-id="\${item.id}">
-          <div class="item-img">\${item.image_url ? \`<img src="\${item.image_url}" alt="" onerror="this.parentNode.innerHTML='\${emojiFor(item.name)}'"/>\` : emojiFor(item.name)}</div>
+          <div class="item-img">\${item.image_url ? \`<img src="\${escHtml(item.image_url)}" alt="" onerror="this.parentNode.innerHTML='\${emojiFor(item.name)}'"/>\` : emojiFor(item.name)}</div>
           <div class="item-body"><div class="item-name">\${escHtml(item.name)}</div><div class="item-meta">\${formatPrice(item.price_min, item.price_max)}\${item.link ? \` · <a href="\${escHtml(item.link)}" target="_blank">ссылка</a>\` : ''}</div></div>
           \${isMine ? \`<button class="btn-unclaim" data-unclaim="\${item.id}">Отменить ↩</button>\` : \`<button class="btn-claim" data-claim="\${item.id}">Подарю!</button>\`}
         </div>\`;
