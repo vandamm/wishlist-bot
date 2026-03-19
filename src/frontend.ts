@@ -8,20 +8,20 @@ export const INDEX_HTML = /* html */`<!DOCTYPE html>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: system-ui, -apple-system, sans-serif; background: #f0f5fd; color: #2d2d2d; min-height: 100vh; }
+body { font-family: system-ui, -apple-system, sans-serif; background: #fdf0f0; color: #2d2d2d; min-height: 100vh; padding-top: var(--safe-top, 0px); }
 
 :root {
-  --accent: #7a9ec9;
-  --accent-dark: #4f7aaa;
-  --accent-light: #e8f0fa;
-  --border: #d8e4f0;
+  --accent: #d4817a;
+  --accent-dark: #b5605a;
+  --accent-light: #fae8e6;
+  --border: #f0d4d0;
   --bg: #fff;
   --text: #2d2d2d;
-  --muted: #7a8fa8;
-  --subtle: #f0f5fd;
+  --muted: #a8888a;
+  --subtle: #fdf0f0;
 }
 
-.header { background: var(--accent); color: #fff; padding: 10px 16px; font-weight: 600; font-size: 15px; text-align: center; }
+.header { background: var(--accent); color: #fff; font-weight: 600; font-size: 15px; text-align: center; padding: calc(var(--safe-top, 0px) + 10px) 16px 10px; margin-top: calc(-1 * var(--safe-top, 0px)); }
 .section-label { padding: 10px 14px 6px; font-size: 12px; font-weight: 700; color: var(--accent-dark); text-transform: uppercase; letter-spacing: 0.5px; background: var(--subtle); }
 input[type=range] { height: 28px; }
 input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); cursor: pointer; }
@@ -52,7 +52,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 
 .btn-claim { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 7px 13px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
 .btn-unclaim { background: var(--bg); color: var(--accent-dark); border: 1.5px solid var(--accent); border-radius: 8px; padding: 6px 13px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
 .btn-delete { background: none; border: none; color: #ccc; font-size: 18px; cursor: pointer; padding: 4px; flex-shrink: 0; }
-.btn-delete:hover { color: #e07a5f; }
+.btn-delete:hover { color: var(--accent-dark); }
 .footer-note { padding: 10px 14px; font-size: 12px; color: #aaa; text-align: center; }
 .error-toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #2d2d2d; color: #fff; padding: 10px 18px; border-radius: 10px; font-size: 13px; z-index: 100; display: none; }
 .loading { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
@@ -75,7 +75,8 @@ tg.requestFullscreen?.();
 function applyTopPadding() {
   const safeTop = tg.safeAreaInset?.top ?? 0;
   const contentTop = tg.contentSafeAreaInset?.top ?? 0;
-  document.body.style.paddingTop = (safeTop + contentTop) + 'px';
+  const total = safeTop + contentTop;
+  document.documentElement.style.setProperty('--safe-top', total + 'px');
 }
 applyTopPadding();
 tg.onEvent?.('safeAreaChanged', applyTopPadding);
