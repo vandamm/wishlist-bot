@@ -146,6 +146,12 @@ function budgetHint(shown, total) {
   return shown + ' из ' + plural(total, 'подарка', 'подарков', 'подарков');
 }
 
+function ceilDecimal(n) {
+  if (n <= 0) return 100;
+  const power = Math.pow(10, Math.ceil(Math.log10(n)));
+  return power === n ? n : power;
+}
+
 function formatPrice(min, max) {
   if (min === null) return '';
   if (min === max) return min + '€';
@@ -159,7 +165,7 @@ async function loadItems() {
   state.claimedCount = data.claimed_count;
   state.items = data.items;
   // Set slider max to highest price
-  const maxPrice = Math.max(100, ...state.items.map(i => i.price_max ?? i.price_min ?? 0).filter(Boolean));
+  const maxPrice = ceilDecimal(Math.max(...state.items.map(i => i.price_max ?? i.price_min ?? 0).filter(Boolean)));
   state.budget = maxPrice;
   render();
 }
@@ -225,7 +231,7 @@ function renderItemCard(item, isMine) {
 }
 
 function renderFriend() {
-  const maxPrice = Math.max(100, ...state.items.map(i => i.price_max ?? i.price_min ?? 0).filter(p => p));
+  const maxPrice = ceilDecimal(Math.max(...state.items.map(i => i.price_max ?? i.price_min ?? 0).filter(Boolean)));
   const myItems = state.items.filter(i => i.is_mine);
   const available = state.items.filter(i => !i.is_mine && (i.price_min === null || i.price_min <= state.budget));
   const otherClaimedCount = state.claimedCount - myItems.length;
@@ -314,7 +320,7 @@ function attachEvents() {
     state.budget = Math.max(0, +val);
     if (slider) slider.value = state.budget;
     if (numInput) numInput.value = state.budget;
-    const maxPrice = Math.max(100, ...state.items.map(i => i.price_max ?? i.price_min ?? 0).filter(Boolean));
+    const maxPrice = ceilDecimal(Math.max(...state.items.map(i => i.price_max ?? i.price_min ?? 0).filter(Boolean)));
     const unclaimed = state.items.filter(i => !i.is_mine);
     const available = unclaimed.filter(i => i.price_min === null || i.price_min <= state.budget);
     const hint = document.getElementById('budget-hint');
