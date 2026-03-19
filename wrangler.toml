@@ -8,6 +8,9 @@ binding = "DB"
 database_name = "wishlist"
 database_id = "08c15c66-df60-4f1b-80ee-74e3e045c466"
 
+[observability]
+enabled = true
+
 # Secrets (set with `wrangler secret put`):
 # TELEGRAM_BOT_TOKEN
-# OWNER_TELEGRAM_ID
+# TELEGRAM_OWNER_USERNAME

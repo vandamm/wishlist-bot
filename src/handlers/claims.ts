@@ -17,7 +17,7 @@ export async function handleClaim(c: Context<{ Bindings: Env }>) {
   const user = await getUser(c)
   if (!user) return c.json({ error: 'Unauthorized' }, 401)
 
-  if (String(user.id) === c.env.OWNER_TELEGRAM_ID) {
+  if (user.username?.toLowerCase() === c.env.TELEGRAM_OWNER_USERNAME?.toLowerCase()) {
     return c.json({ error: 'Owner cannot claim gifts' }, 403)
   }
 

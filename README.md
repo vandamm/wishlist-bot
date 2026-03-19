@@ -24,8 +24,8 @@ npx wrangler d1 execute wishlist --file=migrations/0001_initial.sql
 npx wrangler secret put TELEGRAM_BOT_TOKEN
 # paste your bot token when prompted
 
-npx wrangler secret put OWNER_TELEGRAM_ID
-# paste your Telegram user ID (find it via @userinfobot on Telegram)
+npx wrangler secret put TELEGRAM_OWNER_USERNAME
+# paste your Telegram username (without @)
 ```
 
 ### 4. Deploy
@@ -58,7 +58,7 @@ Create `.dev.vars` with your secrets:
 
 ```
 TELEGRAM_BOT_TOKEN=your-bot-token-here
-OWNER_TELEGRAM_ID=your-telegram-user-id-here
+TELEGRAM_OWNER_USERNAME=your-telegram-username-here
 ```
 
 Then run:

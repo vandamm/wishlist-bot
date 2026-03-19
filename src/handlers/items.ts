@@ -28,24 +28,30 @@ export async function handleGetItems(c: Context<{ Bindings: Env }>) {
   const user = await getUser(c)
   if (!user) return c.json({ error: 'Unauthorized' }, 401)
 
-  const isOwner = String(user.id) === c.env.OWNER_TELEGRAM_ID
-  const claimed_count = await getClaimedCount(c.env.DB)
+  const isOwner = user.username?.toLowerCase() === c.env.TELEGRAM_OWNER_USERNAME?.toLowerCase()
+  console.info('[items] getItems by user:', user.id, isOwner ? '(owner)' : '(friend)')
 
-  if (isOwner) {
-    // Strip claimer_id — owner sees count only, not who claimed what
-    const items = (await getAllItems(c.env.DB)).map(({ claimer_id: _c, ...item }) => item)
-    return c.json({ is_owner: true, claimed_count, items })
+  try {
+    const claimed_count = await getClaimedCount(c.env.DB)
+
+    if (isOwner) {
+      const items = (await getAllItems(c.env.DB)).map(({ claimer_id: _c, ...item }) => item)
+      return c.json({ is_owner: true, claimed_count, items })
+    }
+
+    const items = await getUnclaimedItems(c.env.DB)
+    return c.json({ is_owner: false, claimed_count, items })
+  } catch (err) {
+    console.error('[items] DB error in getItems:', err)
+    return c.json({ error: 'Internal error' }, 500)
   }
-
-  const items = await getUnclaimedItems(c.env.DB)
-  return c.json({ is_owner: false, claimed_count, items })
 }
 
 export async function handleAddItem(c: Context<{ Bindings: Env }>) {
   const user = await getUser(c)
   if (!user) return c.json({ error: 'Unauthorized' }, 401)
 
-  if (String(user.id) !== c.env.OWNER_TELEGRAM_ID) {
+  if (user.username?.toLowerCase() !== c.env.TELEGRAM_OWNER_USERNAME?.toLowerCase()) {
     return c.json({ error: 'Forbidden' }, 403)
   }
 
@@ -72,6 +78,7 @@ export async function handleAddItem(c: Context<{ Bindings: Env }>) {
     }
   }
 
+  console.info('[items] addItem:', body.name, 'by user:', user.id)
   const item = await addItem(c.env.DB, {
     name: body.name.trim(),
     link: linkStr,
@@ -99,7 +106,7 @@ export async function handleDeleteItem(c: Context<{ Bindings: Env }>) {
   const user = await getUser(c)
   if (!user) return c.json({ error: 'Unauthorized' }, 401)
 
-  if (String(user.id) !== c.env.OWNER_TELEGRAM_ID) {
+  if (user.username?.toLowerCase() !== c.env.TELEGRAM_OWNER_USERNAME?.toLowerCase()) {
     return c.json({ error: 'Forbidden' }, 403)
   }
   const id = c.req.param('id') ?? ''

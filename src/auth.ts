@@ -13,11 +13,22 @@ export async function validateInitData(
   initData: string,
   botToken: string
 ): Promise<AuthResult> {
-  if (!initData) return { valid: false }
+  if (!initData) {
+    console.warn('[auth] empty initData')
+    return { valid: false }
+  }
+
+  if (!botToken) {
+    console.error('[auth] TELEGRAM_BOT_TOKEN is not set!')
+    return { valid: false }
+  }
 
   const params = new URLSearchParams(initData)
   const hash = params.get('hash')
-  if (!hash) return { valid: false }
+  if (!hash) {
+    console.warn('[auth] missing hash in initData')
+    return { valid: false }
+  }
 
   params.delete('hash')
   const dataCheckString = [...params.entries()]
@@ -40,18 +51,30 @@ export async function validateInitData(
     .map(b => b.toString(16).padStart(2, '0'))
     .join('')
 
-  if (expectedHash !== hash) return { valid: false }
+  if (expectedHash !== hash) {
+    console.warn('[auth] HMAC mismatch — expected:', expectedHash.slice(0, 8) + '...', 'got:', hash.slice(0, 8) + '...')
+    return { valid: false }
+  }
 
   const authDate = Number(params.get('auth_date') ?? 0)
-  if (Date.now() / 1000 - authDate > 86400) return { valid: false }
+  const age = Date.now() / 1000 - authDate
+  if (age > 86400) {
+    console.warn('[auth] initData expired — age:', Math.round(age), 'seconds')
+    return { valid: false }
+  }
 
   const userStr = params.get('user')
-  if (!userStr) return { valid: false }
+  if (!userStr) {
+    console.warn('[auth] missing user in initData')
+    return { valid: false }
+  }
 
   try {
     const user = JSON.parse(userStr) as TelegramUser
+    console.info('[auth] validated user:', user.id, user.username ?? '(no username)')
     return { valid: true, user }
   } catch {
+    console.warn('[auth] failed to parse user JSON')
     return { valid: false }
   }
 }

@@ -6,7 +6,7 @@ import { addItem } from '../src/db'
 import { handleGetItems, handleAddItem, handleDeleteItem } from '../src/handlers/items'
 
 const BOT_TOKEN = 'test-token'
-const OWNER_ID = '111'
+const OWNER_USERNAME = 'testowner'
 
 const SCHEMA = `
   CREATE TABLE IF NOT EXISTS items (
@@ -20,10 +20,10 @@ const SCHEMA = `
 `
 
 function makeApp() {
-  type TestEnv = { DB: D1Database; TELEGRAM_BOT_TOKEN: string; OWNER_TELEGRAM_ID: string }
+  type TestEnv = { DB: D1Database; TELEGRAM_BOT_TOKEN: string; TELEGRAM_OWNER_USERNAME: string }
   const app = new Hono<{ Bindings: TestEnv }>()
   app.use('*', async (c, next) => {
-    c.env = { DB: env.DB, TELEGRAM_BOT_TOKEN: BOT_TOKEN, OWNER_TELEGRAM_ID: OWNER_ID }
+    c.env = { DB: env.DB, TELEGRAM_BOT_TOKEN: BOT_TOKEN, TELEGRAM_OWNER_USERNAME: OWNER_USERNAME }
     await next()
   })
   app.get('/api/items', handleGetItems)
@@ -32,8 +32,8 @@ function makeApp() {
   return app
 }
 
-async function authHeader(userId: number): Promise<Record<string, string>> {
-  return { 'X-Telegram-Init-Data': await makeInitData(BOT_TOKEN, { id: userId }) }
+async function authHeader(userId: number, username?: string): Promise<Record<string, string>> {
+  return { 'X-Telegram-Init-Data': await makeInitData(BOT_TOKEN, { id: userId, username }) }
 }
 
 beforeEach(async () => {
@@ -45,7 +45,7 @@ describe('GET /api/items as owner', () => {
   it('returns all items with is_owner true', async () => {
     await addItem(env.DB, { name: 'Gift A', link: null, image_url: null, price_min: null, price_max: null })
     const app = makeApp()
-    const res = await app.request('/api/items', { headers: await authHeader(parseInt(OWNER_ID)) })
+    const res = await app.request('/api/items', { headers: await authHeader(111, OWNER_USERNAME) })
     expect(res.status).toBe(200)
     const body = await res.json() as any
     expect(body.is_owner).toBe(true)
@@ -69,7 +69,7 @@ describe('POST /api/items', () => {
     const app = makeApp()
     const res = await app.request('/api/items', {
       method: 'POST',
-      headers: { ...await authHeader(parseInt(OWNER_ID)), 'Content-Type': 'application/json' },
+      headers: { ...await authHeader(111, OWNER_USERNAME), 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: 'New Gift', price: '50-100' }),
     })
     expect(res.status).toBe(201)
@@ -93,7 +93,7 @@ describe('POST /api/items', () => {
     const app = makeApp()
     const res = await app.request('/api/items', {
       method: 'POST',
-      headers: { ...await authHeader(parseInt(OWNER_ID)), 'Content-Type': 'application/json' },
+      headers: { ...await authHeader(111, OWNER_USERNAME), 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: '' }),
     })
     expect(res.status).toBe(400)
@@ -106,7 +106,7 @@ describe('DELETE /api/items/:id', () => {
     const app = makeApp()
     const res = await app.request(`/api/items/${item.id}`, {
       method: 'DELETE',
-      headers: await authHeader(parseInt(OWNER_ID)),
+      headers: await authHeader(111, OWNER_USERNAME),
     })
     expect(res.status).toBe(200)
   })

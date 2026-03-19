@@ -3,12 +3,12 @@ export const INDEX_HTML = /* html */`<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Вишлист</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: system-ui, -apple-system, sans-serif; background: #f0f5fd; color: #2d2d2d; min-height: 100vh; }
+body { font-family: system-ui, -apple-system, sans-serif; background: #f0f5fd; color: #2d2d2d; min-height: 100vh; padding-top: env(safe-area-inset-top); }
 
 :root {
   --accent: #7a9ec9;
@@ -21,7 +21,7 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #f0f5fd; c
   --subtle: #f0f5fd;
 }
 
-.header { background: var(--accent); color: #fff; padding: 14px 16px; font-weight: 600; font-size: 16px; position: sticky; top: 0; z-index: 10; }
+.header { display: none; }
 .add-form { background: var(--bg); border-bottom: 1px solid var(--border); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
 .add-form input { border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px; font-size: 14px; outline: none; color: var(--text); width: 100%; background: var(--bg); }
 .add-form input:focus { border-color: var(--accent); }
@@ -68,6 +68,9 @@ tg.ready();
 tg.expand();
 
 const initData = tg.initData;
+if (!initData) {
+  console.warn('No initData — app opened outside Telegram or initData not provided');
+}
 let state = { isOwner: false, items: [], claimedCount: 0, budget: 100, myClaimedIds: new Set() };
 
 async function api(method, path, body) {
@@ -300,7 +303,11 @@ function escHtml(str) {
 }
 
 loadItems().catch(err => {
-  document.getElementById('app').innerHTML = '<div class="loading">Ошибка загрузки. Попробуйте снова.</div>';
+  console.error('loadItems failed:', err);
+  const msg = err.message === '401'
+    ? 'Ошибка авторизации. Откройте приложение через Telegram.'
+    : 'Ошибка загрузки. Попробуйте снова.';
+  document.getElementById('app').innerHTML = '<div class="loading">' + msg + '</div>';
 });
 </script>
 </body>

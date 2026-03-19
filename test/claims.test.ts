@@ -6,7 +6,7 @@ import { addItem } from '../src/db'
 import { handleClaim, handleUnclaim } from '../src/handlers/claims'
 
 const BOT_TOKEN = 'test-token'
-const OWNER_ID = '111'
+const OWNER_USERNAME = 'testowner'
 const FRIEND_ID = 999
 
 const SCHEMA = `
@@ -21,10 +21,10 @@ const SCHEMA = `
 `
 
 function makeApp() {
-  type TestEnv = { DB: D1Database; TELEGRAM_BOT_TOKEN: string; OWNER_TELEGRAM_ID: string }
+  type TestEnv = { DB: D1Database; TELEGRAM_BOT_TOKEN: string; TELEGRAM_OWNER_USERNAME: string }
   const app = new Hono<{ Bindings: TestEnv }>()
   app.use('*', async (c, next) => {
-    c.env = { DB: env.DB, TELEGRAM_BOT_TOKEN: BOT_TOKEN, OWNER_TELEGRAM_ID: OWNER_ID }
+    c.env = { DB: env.DB, TELEGRAM_BOT_TOKEN: BOT_TOKEN, TELEGRAM_OWNER_USERNAME: OWNER_USERNAME }
     await next()
   })
   app.post('/api/items/:id/claim', handleClaim)
@@ -32,8 +32,8 @@ function makeApp() {
   return app
 }
 
-async function authHeader(userId: number) {
-  return { 'X-Telegram-Init-Data': await makeInitData(BOT_TOKEN, { id: userId }) }
+async function authHeader(userId: number, username?: string) {
+  return { 'X-Telegram-Init-Data': await makeInitData(BOT_TOKEN, { id: userId, username }) }
 }
 
 beforeEach(async () => {
@@ -65,7 +65,7 @@ describe('POST /api/items/:id/claim', () => {
     const app = makeApp()
     const res = await app.request(`/api/items/${item.id}/claim`, {
       method: 'POST',
-      headers: await authHeader(parseInt(OWNER_ID)),
+      headers: await authHeader(111, OWNER_USERNAME),
     })
     expect(res.status).toBe(403)
   })
