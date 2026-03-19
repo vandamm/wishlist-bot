@@ -142,7 +142,8 @@ function plural(n, one, few, many) {
 }
 
 function budgetHint(shown, total) {
-  return 'Показано ' + shown + ' из ' + plural(total, 'подарка', 'подарков', 'подарков');
+  if (shown === total) return plural(total, 'подарок', 'подарка', 'подарков');
+  return shown + ' из ' + plural(total, 'подарка', 'подарков', 'подарков');
 }
 
 function formatPrice(min, max) {
