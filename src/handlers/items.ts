@@ -2,7 +2,7 @@ import type { Context } from 'hono'
 import type { Env } from '../types'
 import {
   getAllItems, getItemsForFriend, getClaimedCount,
-  addItem, deleteItem, updateItemImage,
+  addItem, deleteItem, updateItemImage, updateItemEmoji,
 } from '../db'
 import { parsePrice } from '../price'
 import { fetchOgImage } from '../ogimage'
@@ -83,6 +83,7 @@ export async function handleAddItem(c: Context<{ Bindings: Env }>) {
     name: body.name.trim(),
     link: linkStr,
     image_url: null,
+    emoji: null,
     price_min: parsed?.min ?? null,
     price_max: parsed?.max ?? null,
   })
@@ -112,5 +113,23 @@ export async function handleDeleteItem(c: Context<{ Bindings: Env }>) {
   const id = c.req.param('id') ?? ''
   const deleted = await deleteItem(c.env.DB, id)
   if (!deleted) return c.json({ error: 'Not found' }, 404)
+  return c.json({ ok: true })
+}
+
+export async function handleUpdateEmoji(c: Context<{ Bindings: Env }>) {
+  const user = await getUser(c)
+  if (!user) return c.json({ error: 'Unauthorized' }, 401)
+
+  if (user.username?.toLowerCase() !== c.env.TELEGRAM_OWNER_USERNAME?.toLowerCase()) {
+    return c.json({ error: 'Forbidden' }, 403)
+  }
+
+  const id = c.req.param('id') ?? ''
+  const body = await c.req.json<{ emoji?: string }>()
+  const emoji = body.emoji?.trim()
+  if (!emoji) return c.json({ error: 'emoji is required' }, 400)
+
+  const updated = await updateItemEmoji(c.env.DB, id, emoji)
+  if (!updated) return c.json({ error: 'Not found' }, 404)
   return c.json({ ok: true })
 }

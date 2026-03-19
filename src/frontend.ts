@@ -52,8 +52,12 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 
 .item-meta a { color: var(--accent-dark); text-decoration: none; }
 .btn-claim { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 7px 13px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
 .btn-unclaim { background: var(--bg); color: var(--accent-dark); border: 1.5px solid var(--accent); border-radius: 8px; padding: 6px 13px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+.btn-link { background: var(--accent-light); color: var(--accent-dark); border: none; border-radius: 8px; padding: 6px 10px; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0; text-decoration: none; display: inline-flex; align-items: center; gap: 3px; }
 .btn-delete { background: none; border: none; color: #ccc; font-size: 18px; cursor: pointer; padding: 4px; flex-shrink: 0; }
 .btn-delete:hover { color: var(--accent-dark); }
+.item-img.editable { cursor: pointer; position: relative; }
+.item-img.editable::after { content: '✎'; position: absolute; bottom: -2px; right: -2px; font-size: 10px; background: var(--accent); color: #fff; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; }
+.emoji-input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; font-size: 22px; text-align: center; z-index: 5; cursor: pointer; }
 .footer-note { padding: 10px 14px; font-size: 12px; color: #aaa; text-align: center; }
 .error-toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #2d2d2d; color: #fff; padding: 10px 18px; border-radius: 10px; font-size: 13px; z-index: 100; display: none; }
 .loading { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
@@ -110,7 +114,7 @@ function showToast(msg, duration = 3000) {
   setTimeout(() => t.style.display = 'none', duration);
 }
 
-function emojiFor(name) {
+function autoEmoji(name) {
   const n = name.toLowerCase();
   if (n.includes('книг')) return '📖';
   if (n.includes('духи') || n.includes('парфюм')) return '🌸';
@@ -120,6 +124,10 @@ function emojiFor(name) {
   if (n.includes('обув') || n.includes('туфл')) return '👟';
   if (n.includes('сумк')) return '👜';
   return '🎁';
+}
+
+function itemEmoji(item) {
+  return item.emoji || autoEmoji(item.name);
 }
 
 function plural(n, one, few, many) {
@@ -163,18 +171,18 @@ function render() {
 function renderOwner() {
   const itemsHtml = state.items.map(item => \`
     <div class="item" data-id="\${item.id}">
-      <div class="item-img">
+      <div class="item-img editable" data-emoji-edit="\${item.id}" style="position:relative">
         \${item.image_url
-          ? \`<img src="\${escHtml(item.image_url)}" alt="" onerror="this.parentNode.innerHTML='\${emojiFor(item.name)}'"/>\`
-          : emojiFor(item.name)}
+          ? \`<img src="\${escHtml(item.image_url)}" alt="" onerror="this.parentNode.innerHTML='\${itemEmoji(item)}'"/>\`
+          : itemEmoji(item)}
       </div>
       <div class="item-body">
         <div class="item-name">\${escHtml(item.name)}</div>
         <div class="item-meta">
           \${formatPrice(item.price_min, item.price_max)}
-          \${item.link ? \` · <a href="\${escHtml(item.link)}" target="_blank" rel="noopener noreferrer">ссылка</a>\` : ''}
         </div>
       </div>
+      \${item.link ? \`<a class="btn-link" href="\${escHtml(item.link)}" target="_blank" rel="noopener noreferrer">Открыть ↗</a>\` : ''}
       <button class="btn-delete" data-delete="\${item.id}" title="Удалить">✕</button>
     </div>
   \`).join('');
@@ -199,16 +207,16 @@ function renderItemCard(item, isMine) {
   return \`<div class="item" data-id="\${item.id}">
     <div class="item-img">
       \${item.image_url
-        ? \`<img src="\${escHtml(item.image_url)}" alt="" onerror="this.parentNode.innerHTML='\${emojiFor(item.name)}'"/>\`
-        : emojiFor(item.name)}
+        ? \`<img src="\${escHtml(item.image_url)}" alt="" onerror="this.parentNode.innerHTML='\${itemEmoji(item)}'"/>\`
+        : itemEmoji(item)}
     </div>
     <div class="item-body">
       <div class="item-name">\${escHtml(item.name)}</div>
       <div class="item-meta">
         \${formatPrice(item.price_min, item.price_max)}
-        \${item.link ? \` · <a href="\${escHtml(item.link)}" target="_blank" rel="noopener noreferrer">ссылка</a>\` : ''}
       </div>
     </div>
+    \${item.link ? \`<a class="btn-link" href="\${escHtml(item.link)}" target="_blank" rel="noopener noreferrer">Открыть ↗</a>\` : ''}
     \${isMine
       ? \`<button class="btn-unclaim" data-unclaim="\${item.id}">Отменить ↩</button>\`
       : \`<button class="btn-claim" data-claim="\${item.id}">Подарю!</button>\`}
@@ -262,6 +270,30 @@ function attachEvents() {
       const err = await res.json();
       showToast(err.error || 'Ошибка');
     }
+  });
+
+  // Owner: emoji picker
+  document.querySelectorAll('[data-emoji-edit]').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.dataset.emojiEdit;
+      if (el.querySelector('.emoji-input')) return;
+      const input = document.createElement('input');
+      input.className = 'emoji-input';
+      input.type = 'text';
+      input.inputMode = 'text';
+      input.maxLength = 4;
+      input.setAttribute('autocomplete', 'off');
+      el.appendChild(input);
+      input.focus();
+      input.addEventListener('input', async () => {
+        const val = input.value.trim();
+        if (!val) return;
+        input.remove();
+        const res = await api('PUT', \`/api/items/\${id}/emoji\`, { emoji: val });
+        if (res.ok) await loadItems();
+      });
+      input.addEventListener('blur', () => input.remove());
+    });
   });
 
   // Owner: delete item

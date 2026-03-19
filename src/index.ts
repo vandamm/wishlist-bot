@@ -4,7 +4,7 @@ import type { Env } from './types'
 
 export type { Env }
 import { validateInitData } from './auth'
-import { handleGetItems, handleAddItem, handleDeleteItem } from './handlers/items'
+import { handleGetItems, handleAddItem, handleDeleteItem, handleUpdateEmoji } from './handlers/items'
 import { handleClaim, handleUnclaim } from './handlers/claims'
 import { handleWebhook } from './handlers/webhook'
 import { INDEX_HTML } from './frontend'
@@ -49,6 +49,7 @@ app.use('/api/*', async (c, next) => {
 app.get('/api/items', handleGetItems)
 app.post('/api/items', handleAddItem)
 app.delete('/api/items/:id', handleDeleteItem)
+app.put('/api/items/:id/emoji', handleUpdateEmoji)
 app.post('/api/items/:id/claim', handleClaim)
 app.delete('/api/items/:id/claim', handleUnclaim)
 

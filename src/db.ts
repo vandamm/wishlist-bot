@@ -5,6 +5,7 @@ export interface Item {
   name: string
   link: string | null
   image_url: string | null
+  emoji: string | null
   price_min: number | null
   price_max: number | null
   created_at: number
@@ -60,9 +61,9 @@ export async function addItem(
   const id = nanoid(10)
   const created_at = Math.floor(Date.now() / 1000)
   await db.prepare(`
-    INSERT INTO items (id, name, link, image_url, price_min, price_max, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).bind(id, item.name, item.link, item.image_url, item.price_min, item.price_max, created_at).run()
+    INSERT INTO items (id, name, link, image_url, emoji, price_min, price_max, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(id, item.name, item.link, item.image_url, item.emoji, item.price_min, item.price_max, created_at).run()
   return { id, created_at, ...item }
 }
 
@@ -73,6 +74,11 @@ export async function deleteItem(db: D1Database, id: string): Promise<boolean> {
 
 export async function updateItemImage(db: D1Database, id: string, image_url: string): Promise<void> {
   await db.prepare(`UPDATE items SET image_url = ? WHERE id = ?`).bind(image_url, id).run()
+}
+
+export async function updateItemEmoji(db: D1Database, id: string, emoji: string): Promise<boolean> {
+  const result = await db.prepare(`UPDATE items SET emoji = ? WHERE id = ?`).bind(emoji, id).run()
+  return (result.meta.changes ?? 0) > 0
 }
 
 export async function claimItem(

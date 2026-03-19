@@ -11,7 +11,7 @@ const OWNER_USERNAME = 'testowner'
 const SCHEMA = `
   CREATE TABLE IF NOT EXISTS items (
     id TEXT PRIMARY KEY, name TEXT NOT NULL, link TEXT,
-    image_url TEXT, price_min REAL, price_max REAL, created_at INTEGER NOT NULL
+    image_url TEXT, emoji TEXT, price_min REAL, price_max REAL, created_at INTEGER NOT NULL
   );
   CREATE TABLE IF NOT EXISTS claims (
     item_id TEXT PRIMARY KEY REFERENCES items(id) ON DELETE CASCADE,
@@ -43,7 +43,7 @@ beforeEach(async () => {
 
 describe('GET /api/items as owner', () => {
   it('returns all items with is_owner true', async () => {
-    await addItem(env.DB, { name: 'Gift A', link: null, image_url: null, price_min: null, price_max: null })
+    await addItem(env.DB, { name: 'Gift A', link: null, image_url: null, emoji: null, price_min: null, price_max: null })
     const app = makeApp()
     const res = await app.request('/api/items', { headers: await authHeader(111, OWNER_USERNAME) })
     expect(res.status).toBe(200)
@@ -102,7 +102,7 @@ describe('POST /api/items', () => {
 
 describe('DELETE /api/items/:id', () => {
   it('owner can delete an item', async () => {
-    const item = await addItem(env.DB, { name: 'X', link: null, image_url: null, price_min: null, price_max: null })
+    const item = await addItem(env.DB, { name: 'X', link: null, image_url: null, emoji: null, price_min: null, price_max: null })
     const app = makeApp()
     const res = await app.request(`/api/items/${item.id}`, {
       method: 'DELETE',

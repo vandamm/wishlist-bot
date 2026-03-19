@@ -12,7 +12,7 @@ const FRIEND_ID = 999
 const SCHEMA = `
   CREATE TABLE IF NOT EXISTS items (
     id TEXT PRIMARY KEY, name TEXT NOT NULL, link TEXT,
-    image_url TEXT, price_min REAL, price_max REAL, created_at INTEGER NOT NULL
+    image_url TEXT, emoji TEXT, price_min REAL, price_max REAL, created_at INTEGER NOT NULL
   );
   CREATE TABLE IF NOT EXISTS claims (
     item_id TEXT PRIMARY KEY REFERENCES items(id) ON DELETE CASCADE,
@@ -43,7 +43,7 @@ beforeEach(async () => {
 
 describe('POST /api/items/:id/claim', () => {
   it('friend can claim an item', async () => {
-    const item = await addItem(env.DB, { name: 'Gift', link: null, image_url: null, price_min: null, price_max: null })
+    const item = await addItem(env.DB, { name: 'Gift', link: null, image_url: null, emoji: null, price_min: null, price_max: null })
     const app = makeApp()
     const res = await app.request(`/api/items/${item.id}/claim`, {
       method: 'POST',
@@ -53,7 +53,7 @@ describe('POST /api/items/:id/claim', () => {
   })
 
   it('returns 409 when already claimed by another', async () => {
-    const item = await addItem(env.DB, { name: 'Gift', link: null, image_url: null, price_min: null, price_max: null })
+    const item = await addItem(env.DB, { name: 'Gift', link: null, image_url: null, emoji: null, price_min: null, price_max: null })
     const app = makeApp()
     await app.request(`/api/items/${item.id}/claim`, { method: 'POST', headers: await authHeader(FRIEND_ID) })
     const res = await app.request(`/api/items/${item.id}/claim`, { method: 'POST', headers: await authHeader(888) })
@@ -61,7 +61,7 @@ describe('POST /api/items/:id/claim', () => {
   })
 
   it('owner cannot claim', async () => {
-    const item = await addItem(env.DB, { name: 'Gift', link: null, image_url: null, price_min: null, price_max: null })
+    const item = await addItem(env.DB, { name: 'Gift', link: null, image_url: null, emoji: null, price_min: null, price_max: null })
     const app = makeApp()
     const res = await app.request(`/api/items/${item.id}/claim`, {
       method: 'POST',
@@ -73,7 +73,7 @@ describe('POST /api/items/:id/claim', () => {
 
 describe('DELETE /api/items/:id/claim', () => {
   it('friend can unclaim their own claim', async () => {
-    const item = await addItem(env.DB, { name: 'Gift', link: null, image_url: null, price_min: null, price_max: null })
+    const item = await addItem(env.DB, { name: 'Gift', link: null, image_url: null, emoji: null, price_min: null, price_max: null })
     const app = makeApp()
     await app.request(`/api/items/${item.id}/claim`, { method: 'POST', headers: await authHeader(FRIEND_ID) })
     const res = await app.request(`/api/items/${item.id}/claim`, {
@@ -84,7 +84,7 @@ describe('DELETE /api/items/:id/claim', () => {
   })
 
   it('cannot unclaim someone else\'s claim', async () => {
-    const item = await addItem(env.DB, { name: 'Gift', link: null, image_url: null, price_min: null, price_max: null })
+    const item = await addItem(env.DB, { name: 'Gift', link: null, image_url: null, emoji: null, price_min: null, price_max: null })
     const app = makeApp()
     await app.request(`/api/items/${item.id}/claim`, { method: 'POST', headers: await authHeader(FRIEND_ID) })
     const res = await app.request(`/api/items/${item.id}/claim`, {
