@@ -236,9 +236,10 @@ function renderFriend() {
   return \`
     <div class="header"><div class="header-title">Wishlist</div></div>
     \${myItems.length > 0 ? \`
-      <div class="section-label">Мои подарки</div>
+      <div class="section-label">Я дарю</div>
       <div class="item-list">\${myItemsHtml}</div>
     \` : ''}
+    <div class="section-label">Выбрать подарок</div>
     <div class="budget-bar">
       <div class="budget-label">Мой бюджет</div>
       <div class="budget-row">
