@@ -21,7 +21,8 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #fdf0f0; c
   --subtle: #fdf0f0;
 }
 
-.header { background: var(--accent); color: #fff; font-weight: 600; font-size: 15px; text-align: center; padding: calc(var(--safe-top, 0px) + 10px) 16px 10px; margin-top: calc(-1 * var(--safe-top, 0px)); }
+.header { background: var(--accent); color: #fff; font-weight: 600; font-size: 15px; text-align: center; padding-top: var(--device-top, 0px); margin-top: calc(-1 * var(--safe-top, 0px)); min-height: calc(var(--safe-top, 0px)); display: flex; align-items: center; justify-content: center; padding-bottom: 10px; }
+.header-title { height: var(--content-top, 0px); display: flex; align-items: center; min-height: 30px; }
 .section-label { padding: 10px 14px 6px; font-size: 12px; font-weight: 700; color: var(--accent-dark); text-transform: uppercase; letter-spacing: 0.5px; background: var(--subtle); }
 input[type=range] { height: 28px; }
 input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); cursor: pointer; }
@@ -73,10 +74,11 @@ tg.expand();
 tg.requestFullscreen?.();
 
 function applyTopPadding() {
-  const safeTop = tg.safeAreaInset?.top ?? 0;
+  const deviceTop = tg.safeAreaInset?.top ?? 0;
   const contentTop = tg.contentSafeAreaInset?.top ?? 0;
-  const total = safeTop + contentTop;
-  document.documentElement.style.setProperty('--safe-top', total + 'px');
+  document.documentElement.style.setProperty('--device-top', deviceTop + 'px');
+  document.documentElement.style.setProperty('--content-top', contentTop + 'px');
+  document.documentElement.style.setProperty('--safe-top', (deviceTop + contentTop) + 'px');
 }
 applyTopPadding();
 tg.onEvent?.('safeAreaChanged', applyTopPadding);
@@ -118,6 +120,21 @@ function emojiFor(name) {
   if (n.includes('обув') || n.includes('туфл')) return '👟';
   if (n.includes('сумк')) return '👜';
   return '🎁';
+}
+
+function plural(n, one, few, many) {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  let form;
+  if (mod100 >= 11 && mod100 <= 19) form = many;
+  else if (mod10 === 1) form = one;
+  else if (mod10 >= 2 && mod10 <= 4) form = few;
+  else form = many;
+  return n + ' ' + form;
+}
+
+function budgetHint(shown, total) {
+  return 'Показано ' + shown + ' из ' + plural(total, 'подарка', 'подарков', 'подарков');
 }
 
 function formatPrice(min, max) {
@@ -163,7 +180,7 @@ function renderOwner() {
   \`).join('');
 
   return \`
-    <div class="header">Wishlist</div>
+    <div class="header"><div class="header-title">Add presents</div></div>
     <div class="add-form">
       <input id="inp-name" placeholder="Название подарка *" autocomplete="off">
       <input id="inp-link" placeholder="Ссылка (необязательно)" type="url">
@@ -171,7 +188,7 @@ function renderOwner() {
       <button class="btn-primary" id="btn-add">+ Добавить подарок</button>
     </div>
     <div class="stats-bar">
-      \${state.items.length} подарков · <strong>\${state.claimedCount} уже выбраны 🎉</strong>
+      \${plural(state.items.length, 'подарок', 'подарка', 'подарков')} · <strong>\${plural(state.claimedCount, 'уже выбран', 'уже выбраны', 'уже выбраны')} 🎉</strong>
     </div>
     <div class="item-list">\${itemsHtml}</div>
     \${state.items.length === 0 ? '<div class="footer-note">Добавьте первый подарок 🎁</div>' : ''}
@@ -208,7 +225,7 @@ function renderFriend() {
   const availableHtml = available.map(item => renderItemCard(item, false)).join('');
 
   return \`
-    <div class="header">Wishlist</div>
+    <div class="header"><div class="header-title">Wishlist</div></div>
     \${myItems.length > 0 ? \`
       <div class="section-label">Мои подарки</div>
       <div class="item-list">\${myItemsHtml}</div>
@@ -220,10 +237,10 @@ function renderFriend() {
         <input class="budget-num" type="number" id="budget-num" value="\${state.budget}">
         <span class="budget-unit">€</span>
       </div>
-      <div class="budget-hint" id="budget-hint">Показано \${available.length} из \${state.items.filter(i => !i.is_mine).length} подарков</div>
+      <div class="budget-hint" id="budget-hint">\${budgetHint(available.length, state.items.filter(i => !i.is_mine).length)}</div>
     </div>
     <div class="item-list" id="available-list">\${availableHtml}</div>
-    \${otherClaimedCount > 0 ? \`<div class="footer-note">\${otherClaimedCount} подарков уже выбраны другими</div>\` : ''}
+    \${otherClaimedCount > 0 ? \`<div class="footer-note">\${plural(otherClaimedCount, 'подарок уже выбран', 'подарка уже выбраны', 'подарков уже выбраны')} другими</div>\` : ''}
     \${available.length === 0 ? '<div class="footer-note">Нет подарков в вашем бюджете</div>' : ''}
   \`;
 }
@@ -267,7 +284,7 @@ function attachEvents() {
     const unclaimed = state.items.filter(i => !i.is_mine);
     const available = unclaimed.filter(i => i.price_min === null || i.price_min <= state.budget);
     const hint = document.getElementById('budget-hint');
-    if (hint) hint.textContent = \`Показано \${available.length} из \${unclaimed.length} подарков\`;
+    if (hint) hint.textContent = budgetHint(available.length, unclaimed.length);
     // Re-render available list only (not "my gifts")
     const list = document.getElementById('available-list');
     if (list) {
