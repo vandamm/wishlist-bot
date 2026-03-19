@@ -6,7 +6,7 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "wishlist"
-database_id = "placeholder-replace-after-create"
+database_id = "08c15c66-df60-4f1b-80ee-74e3e045c466"
 
 # Secrets (set with `wrangler secret put`):
 # TELEGRAM_BOT_TOKEN
