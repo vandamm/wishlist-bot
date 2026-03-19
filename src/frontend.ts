@@ -148,8 +148,7 @@ function budgetHint(shown, total) {
 
 function ceilDecimal(n) {
   if (n <= 0) return 100;
-  const power = Math.pow(10, Math.ceil(Math.log10(n)));
-  return power === n ? n : power;
+  return Math.ceil(n / 10) * 10;
 }
 
 function formatPrice(min, max) {
