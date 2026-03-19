@@ -57,7 +57,10 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 
 .btn-delete:hover { color: var(--accent-dark); }
 .item-img.editable { cursor: pointer; position: relative; }
 .item-img.editable::after { content: '✎'; position: absolute; bottom: -2px; right: -2px; font-size: 10px; background: var(--accent); color: #fff; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; }
-.emoji-input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; font-size: 22px; text-align: center; z-index: 5; cursor: pointer; }
+.emoji-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 50; display: flex; align-items: center; justify-content: center; }
+.emoji-edit-box { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.emoji-edit-input { width: 64px; height: 64px; border-radius: 14px; background: var(--accent-light); border: 2px solid var(--accent); font-size: 32px; text-align: center; outline: none; display: flex; align-items: center; justify-content: center; caret-color: var(--accent); }
+.emoji-edit-label { color: #fff; font-size: 14px; font-weight: 500; }
 .footer-note { padding: 10px 14px; font-size: 12px; color: #aaa; text-align: center; }
 .error-toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #2d2d2d; color: #fff; padding: 10px 18px; border-radius: 10px; font-size: 13px; z-index: 100; display: none; }
 .loading { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
@@ -178,9 +181,11 @@ function renderOwner() {
   const itemsHtml = state.items.map(item => \`
     <div class="item" data-id="\${item.id}">
       <div class="item-img editable" data-emoji-edit="\${item.id}" style="position:relative">
-        \${item.image_url
-          ? \`<img src="\${escHtml(item.image_url)}" alt="" onerror="this.parentNode.innerHTML='\${itemEmoji(item)}'"/>\`
-          : itemEmoji(item)}
+        \${item.emoji
+          ? item.emoji
+          : item.image_url
+            ? \`<img src="\${escHtml(item.image_url)}" alt="" onerror="this.parentNode.innerHTML='\${autoEmoji(item.name)}'"/>\`
+            : autoEmoji(item.name)}
       </div>
       <div class="item-body">
         <div class="item-name">\${escHtml(item.name)}</div>
@@ -212,9 +217,11 @@ function renderOwner() {
 function renderItemCard(item, isMine) {
   return \`<div class="item" data-id="\${item.id}">
     <div class="item-img">
-      \${item.image_url
-        ? \`<img src="\${escHtml(item.image_url)}" alt="" onerror="this.parentNode.innerHTML='\${itemEmoji(item)}'"/>\`
-        : itemEmoji(item)}
+      \${item.emoji
+        ? item.emoji
+        : item.image_url
+          ? \`<img src="\${escHtml(item.image_url)}" alt="" onerror="this.parentNode.innerHTML='\${autoEmoji(item.name)}'"/>\`
+          : autoEmoji(item.name)}
     </div>
     <div class="item-body">
       <div class="item-name">\${escHtml(item.name)}</div>
@@ -279,27 +286,36 @@ function attachEvents() {
     }
   });
 
-  // Owner: emoji picker
+  // Owner: emoji picker with overlay
   document.querySelectorAll('[data-emoji-edit]').forEach(el => {
     el.addEventListener('click', () => {
       const id = el.dataset.emojiEdit;
-      if (el.querySelector('.emoji-input')) return;
-      const input = document.createElement('input');
-      input.className = 'emoji-input';
-      input.type = 'text';
-      input.inputMode = 'text';
-      input.maxLength = 4;
-      input.setAttribute('autocomplete', 'off');
-      el.appendChild(input);
+      if (document.querySelector('.emoji-overlay')) return;
+
+      const overlay = document.createElement('div');
+      overlay.className = 'emoji-overlay';
+      overlay.innerHTML = '<div class="emoji-edit-box">'
+        + '<input class="emoji-edit-input" type="text" inputmode="text" maxlength="4" autocomplete="off">'
+        + '<div class="emoji-edit-label">Введите эмодзи</div>'
+        + '</div>';
+      document.body.appendChild(overlay);
+
+      const input = overlay.querySelector('.emoji-edit-input');
       input.focus();
+
+      function close() { overlay.remove(); }
+
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) close();
+      });
+
       input.addEventListener('input', async () => {
         const val = input.value.trim();
         if (!val) return;
-        input.remove();
+        close();
         const res = await api('PUT', \`/api/items/\${id}/emoji\`, { emoji: val });
         if (res.ok) await loadItems();
       });
-      input.addEventListener('blur', () => input.remove());
     });
   });
 
