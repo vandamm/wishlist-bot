@@ -47,7 +47,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 
 .item-img { width: 46px; height: 46px; border-radius: 8px; background: var(--accent-light); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; overflow: hidden; }
 .item-img img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
 .item-body { flex: 1; min-width: 0; }
-.item-name { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item-name { font-weight: 600; font-size: 14px; }
 .item-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .item-meta a { color: var(--accent-dark); text-decoration: none; }
 .btn-claim { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 7px 13px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
