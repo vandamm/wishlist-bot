@@ -21,7 +21,11 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #f0f5fd; c
   --subtle: #f0f5fd;
 }
 
-.header { display: none; }
+.header { background: var(--accent); color: #fff; padding: 10px 16px; font-weight: 600; font-size: 15px; text-align: center; }
+.section-label { padding: 10px 14px 6px; font-size: 12px; font-weight: 700; color: var(--accent-dark); text-transform: uppercase; letter-spacing: 0.5px; background: var(--subtle); }
+input[type=range] { height: 28px; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); cursor: pointer; }
+input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); cursor: pointer; }
 .add-form { background: var(--bg); border-bottom: 1px solid var(--border); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
 .add-form input { border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px; font-size: 16px; outline: none; color: var(--text); width: 100%; background: var(--bg); }
 .add-form input:focus { border-color: var(--accent); }
@@ -158,7 +162,7 @@ function renderOwner() {
   \`).join('');
 
   return \`
-    <div class="header">🎁 Мой вишлист</div>
+    <div class="header">Wishlist</div>
     <div class="add-form">
       <input id="inp-name" placeholder="Название подарка *" autocomplete="off">
       <input id="inp-link" placeholder="Ссылка (необязательно)" type="url">
@@ -173,37 +177,41 @@ function renderOwner() {
   \`;
 }
 
+function renderItemCard(item, isMine) {
+  return \`<div class="item" data-id="\${item.id}">
+    <div class="item-img">
+      \${item.image_url
+        ? \`<img src="\${escHtml(item.image_url)}" alt="" onerror="this.parentNode.innerHTML='\${emojiFor(item.name)}'"/>\`
+        : emojiFor(item.name)}
+    </div>
+    <div class="item-body">
+      <div class="item-name">\${escHtml(item.name)}</div>
+      <div class="item-meta">
+        \${formatPrice(item.price_min, item.price_max)}
+        \${item.link ? \` · <a href="\${escHtml(item.link)}" target="_blank" rel="noopener noreferrer">ссылка</a>\` : ''}
+      </div>
+    </div>
+    \${isMine
+      ? \`<button class="btn-unclaim" data-unclaim="\${item.id}">Отменить ↩</button>\`
+      : \`<button class="btn-claim" data-claim="\${item.id}">Подарю!</button>\`}
+  </div>\`;
+}
+
 function renderFriend() {
   const maxPrice = Math.max(100, ...state.items.map(i => i.price_max ?? i.price_min ?? 0).filter(p => p));
-  const myClaimedCount = state.items.filter(i => i.is_mine).length;
-  const visible = state.items.filter(i => i.is_mine || i.price_min === null || i.price_min <= state.budget);
-  const otherClaimedCount = state.claimedCount - myClaimedCount;
+  const myItems = state.items.filter(i => i.is_mine);
+  const available = state.items.filter(i => !i.is_mine && (i.price_min === null || i.price_min <= state.budget));
+  const otherClaimedCount = state.claimedCount - myItems.length;
 
-  const itemsHtml = visible.map(item => {
-    const isMine = item.is_mine;
-    return \`
-      <div class="item" data-id="\${item.id}">
-        <div class="item-img">
-          \${item.image_url
-            ? \`<img src="\${escHtml(item.image_url)}" alt="" onerror="this.parentNode.innerHTML='\${emojiFor(item.name)}'"/>\`
-            : emojiFor(item.name)}
-        </div>
-        <div class="item-body">
-          <div class="item-name">\${escHtml(item.name)}</div>
-          <div class="item-meta">
-            \${formatPrice(item.price_min, item.price_max)}
-            \${item.link ? \` · <a href="\${escHtml(item.link)}" target="_blank" rel="noopener noreferrer">ссылка</a>\` : ''}
-          </div>
-        </div>
-        \${isMine
-          ? \`<button class="btn-unclaim" data-unclaim="\${item.id}">Отменить ↩</button>\`
-          : \`<button class="btn-claim" data-claim="\${item.id}">Подарю!</button>\`}
-      </div>
-    \`;
-  }).join('');
+  const myItemsHtml = myItems.map(item => renderItemCard(item, true)).join('');
+  const availableHtml = available.map(item => renderItemCard(item, false)).join('');
 
   return \`
-    <div class="header">🎁 Вишлист</div>
+    <div class="header">Wishlist</div>
+    \${myItems.length > 0 ? \`
+      <div class="section-label">Мои подарки</div>
+      <div class="item-list">\${myItemsHtml}</div>
+    \` : ''}
     <div class="budget-bar">
       <div class="budget-label">Мой бюджет</div>
       <div class="budget-row">
@@ -211,11 +219,11 @@ function renderFriend() {
         <input class="budget-num" type="number" id="budget-num" value="\${state.budget}">
         <span class="budget-unit">€</span>
       </div>
-      <div class="budget-hint" id="budget-hint">Показано \${visible.length} из \${state.items.length} подарков</div>
+      <div class="budget-hint" id="budget-hint">Показано \${available.length} из \${state.items.filter(i => !i.is_mine).length} подарков</div>
     </div>
-    <div class="item-list">\${itemsHtml}</div>
+    <div class="item-list" id="available-list">\${availableHtml}</div>
     \${otherClaimedCount > 0 ? \`<div class="footer-note">\${otherClaimedCount} подарков уже выбраны другими</div>\` : ''}
-    \${visible.length === 0 ? '<div class="footer-note">Нет подарков в вашем бюджете</div>' : ''}
+    \${available.length === 0 ? '<div class="footer-note">Нет подарков в вашем бюджете</div>' : ''}
   \`;
 }
 
@@ -255,21 +263,14 @@ function attachEvents() {
     if (slider) slider.value = state.budget;
     if (numInput) numInput.value = state.budget;
     const maxPrice = Math.max(100, ...state.items.map(i => i.price_max ?? i.price_min ?? 0).filter(Boolean));
-    const visible = state.items.filter(i => i.is_mine || i.price_min === null || i.price_min <= state.budget);
+    const unclaimed = state.items.filter(i => !i.is_mine);
+    const available = unclaimed.filter(i => i.price_min === null || i.price_min <= state.budget);
     const hint = document.getElementById('budget-hint');
-    if (hint) hint.textContent = \`Показано \${visible.length} из \${state.items.length} подарков\`;
-    // Re-render item list only
-    const list = document.querySelector('.item-list');
+    if (hint) hint.textContent = \`Показано \${available.length} из \${unclaimed.length} подарков\`;
+    // Re-render available list only (not "my gifts")
+    const list = document.getElementById('available-list');
     if (list) {
-      const itemsHtml = visible.map(item => {
-        const isMine = item.is_mine;
-        return \`<div class="item" data-id="\${item.id}">
-          <div class="item-img">\${item.image_url ? \`<img src="\${escHtml(item.image_url)}" alt="" onerror="this.parentNode.innerHTML='\${emojiFor(item.name)}'"/>\` : emojiFor(item.name)}</div>
-          <div class="item-body"><div class="item-name">\${escHtml(item.name)}</div><div class="item-meta">\${formatPrice(item.price_min, item.price_max)}\${item.link ? \` · <a href="\${escHtml(item.link)}" target="_blank" rel="noopener noreferrer">ссылка</a>\` : ''}</div></div>
-          \${isMine ? \`<button class="btn-unclaim" data-unclaim="\${item.id}">Отменить ↩</button>\` : \`<button class="btn-claim" data-claim="\${item.id}">Подарю!</button>\`}
-        </div>\`;
-      }).join('');
-      list.innerHTML = itemsHtml;
+      list.innerHTML = available.map(item => renderItemCard(item, false)).join('');
       attachClaimEvents();
     }
   }
