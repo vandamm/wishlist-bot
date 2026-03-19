@@ -1,7 +1,7 @@
 import type { Context } from 'hono'
 import type { Env } from '../types'
 import {
-  getAllItems, getUnclaimedItems, getClaimedCount,
+  getAllItems, getItemsForFriend, getClaimedCount,
   addItem, deleteItem, updateItemImage,
 } from '../db'
 import { parsePrice } from '../price'
@@ -39,7 +39,7 @@ export async function handleGetItems(c: Context<{ Bindings: Env }>) {
       return c.json({ is_owner: true, claimed_count, items })
     }
 
-    const items = await getUnclaimedItems(c.env.DB)
+    const items = await getItemsForFriend(c.env.DB, user.id)
     return c.json({ is_owner: false, claimed_count, items })
   } catch (err) {
     console.error('[items] DB error in getItems:', err)

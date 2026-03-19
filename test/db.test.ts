@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { env } from 'cloudflare:test'
 import {
-  getAllItems, getUnclaimedItems, getClaimedCount,
+  getAllItems, getItemsForFriend, getClaimedCount,
   addItem, deleteItem, updateItemImage,
   claimItem, unclaimItem,
 } from '../src/db'
@@ -77,13 +77,18 @@ describe('unclaimItem', () => {
   })
 })
 
-describe('getUnclaimedItems', () => {
-  it('only returns unclaimed items', async () => {
+describe('getItemsForFriend', () => {
+  it('returns unclaimed items plus items claimed by the friend', async () => {
     const a = await addItem(env.DB, { name: 'A', link: null, image_url: null, price_min: null, price_max: null })
-    await addItem(env.DB, { name: 'B', link: null, image_url: null, price_min: null, price_max: null })
+    const b = await addItem(env.DB, { name: 'B', link: null, image_url: null, price_min: null, price_max: null })
+    const c = await addItem(env.DB, { name: 'C', link: null, image_url: null, price_min: null, price_max: null })
     await claimItem(env.DB, a.id, 999, 'bob')
-    const unclaimed = await getUnclaimedItems(env.DB)
-    expect(unclaimed).toHaveLength(1)
-    expect(unclaimed[0].name).toBe('B')
+    await claimItem(env.DB, c.id, 888, 'alice')
+
+    const items = await getItemsForFriend(env.DB, 999)
+    expect(items).toHaveLength(2)
+    expect(items.map(i => i.name).sort()).toEqual(['A', 'B'])
+    expect(items.find(i => i.name === 'A')!.is_mine).toBe(true)
+    expect(items.find(i => i.name === 'B')!.is_mine).toBe(false)
   })
 })

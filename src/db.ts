@@ -30,15 +30,22 @@ export async function getAllItems(db: D1Database): Promise<ItemWithClaim[]> {
   }))
 }
 
-export async function getUnclaimedItems(db: D1Database): Promise<Item[]> {
+export interface FriendItem extends Item {
+  is_mine: boolean
+}
+
+export async function getItemsForFriend(db: D1Database, telegramUserId: number): Promise<FriendItem[]> {
   const { results } = await db.prepare(`
-    SELECT i.*
+    SELECT i.*, c.telegram_user_id AS claimer_id
     FROM items i
     LEFT JOIN claims c ON i.id = c.item_id
-    WHERE c.item_id IS NULL
+    WHERE c.item_id IS NULL OR c.telegram_user_id = ?
     ORDER BY i.created_at ASC
-  `).all<Item>()
-  return results
+  `).bind(telegramUserId).all<Item & { claimer_id: number | null }>()
+  return results.map(({ claimer_id, ...item }) => ({
+    ...item,
+    is_mine: claimer_id === telegramUserId,
+  }))
 }
 
 export async function getClaimedCount(db: D1Database): Promise<number> {

@@ -8,7 +8,7 @@ export const INDEX_HTML = /* html */`<!DOCTYPE html>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: system-ui, -apple-system, sans-serif; background: #f0f5fd; color: #2d2d2d; min-height: 100vh; padding-top: env(safe-area-inset-top); }
+body { font-family: system-ui, -apple-system, sans-serif; background: #f0f5fd; color: #2d2d2d; min-height: 100vh; }
 
 :root {
   --accent: #7a9ec9;
@@ -23,7 +23,7 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #f0f5fd; c
 
 .header { display: none; }
 .add-form { background: var(--bg); border-bottom: 1px solid var(--border); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
-.add-form input { border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px; font-size: 14px; outline: none; color: var(--text); width: 100%; background: var(--bg); }
+.add-form input { border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px; font-size: 16px; outline: none; color: var(--text); width: 100%; background: var(--bg); }
 .add-form input:focus { border-color: var(--accent); }
 .btn-primary { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 10px; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; }
 .btn-primary:active { background: var(--accent-dark); }
@@ -33,7 +33,7 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #f0f5fd; c
 .budget-label { font-size: 12px; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
 .budget-row { display: flex; align-items: center; gap: 10px; }
 .budget-row input[type=range] { flex: 1; accent-color: var(--accent); }
-.budget-num { border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; width: 70px; text-align: center; font-size: 13px; color: var(--text); background: var(--bg); }
+.budget-num { border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; width: 70px; text-align: center; font-size: 16px; color: var(--text); background: var(--bg); }
 .budget-unit { font-size: 13px; color: var(--muted); font-weight: 600; }
 .budget-hint { font-size: 11px; color: #aaa; margin-top: 6px; }
 .item-list { padding: 4px 0; }
@@ -66,12 +66,22 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #f0f5fd; c
 const tg = window.Telegram.WebApp;
 tg.ready();
 tg.expand();
+tg.requestFullscreen?.();
+
+function applyTopPadding() {
+  const safeTop = tg.safeAreaInset?.top ?? 0;
+  const contentTop = tg.contentSafeAreaInset?.top ?? 0;
+  document.body.style.paddingTop = (safeTop + contentTop) + 'px';
+}
+applyTopPadding();
+tg.onEvent?.('safeAreaChanged', applyTopPadding);
+tg.onEvent?.('contentSafeAreaChanged', applyTopPadding);
 
 const initData = tg.initData;
 if (!initData) {
   console.warn('No initData — app opened outside Telegram or initData not provided');
 }
-let state = { isOwner: false, items: [], claimedCount: 0, budget: 100, myClaimedIds: new Set() };
+let state = { isOwner: false, items: [], claimedCount: 0, budget: 100 };
 
 async function api(method, path, body) {
   const res = await fetch(path, {
@@ -165,11 +175,12 @@ function renderOwner() {
 
 function renderFriend() {
   const maxPrice = Math.max(100, ...state.items.map(i => i.price_max ?? i.price_min ?? 0).filter(p => p));
-  const visible = state.items.filter(i => i.price_min === null || i.price_min <= state.budget);
-  const otherClaimedCount = state.claimedCount - state.myClaimedIds.size;
+  const myClaimedCount = state.items.filter(i => i.is_mine).length;
+  const visible = state.items.filter(i => i.is_mine || i.price_min === null || i.price_min <= state.budget);
+  const otherClaimedCount = state.claimedCount - myClaimedCount;
 
   const itemsHtml = visible.map(item => {
-    const isMine = state.myClaimedIds.has(item.id);
+    const isMine = item.is_mine;
     return \`
       <div class="item" data-id="\${item.id}">
         <div class="item-img">
@@ -244,15 +255,14 @@ function attachEvents() {
     if (slider) slider.value = state.budget;
     if (numInput) numInput.value = state.budget;
     const maxPrice = Math.max(100, ...state.items.map(i => i.price_max ?? i.price_min ?? 0).filter(Boolean));
-    const visible = state.items.filter(i => i.price_min === null || i.price_min <= state.budget);
+    const visible = state.items.filter(i => i.is_mine || i.price_min === null || i.price_min <= state.budget);
     const hint = document.getElementById('budget-hint');
     if (hint) hint.textContent = \`Показано \${visible.length} из \${state.items.length} подарков\`;
     // Re-render item list only
     const list = document.querySelector('.item-list');
     if (list) {
-      const otherClaimedCount = state.claimedCount - state.myClaimedIds.size;
       const itemsHtml = visible.map(item => {
-        const isMine = state.myClaimedIds.has(item.id);
+        const isMine = item.is_mine;
         return \`<div class="item" data-id="\${item.id}">
           <div class="item-img">\${item.image_url ? \`<img src="\${escHtml(item.image_url)}" alt="" onerror="this.parentNode.innerHTML='\${emojiFor(item.name)}'"/>\` : emojiFor(item.name)}</div>
           <div class="item-body"><div class="item-name">\${escHtml(item.name)}</div><div class="item-meta">\${formatPrice(item.price_min, item.price_max)}\${item.link ? \` · <a href="\${escHtml(item.link)}" target="_blank" rel="noopener noreferrer">ссылка</a>\` : ''}</div></div>
@@ -279,7 +289,6 @@ function attachClaimEvents() {
         showToast('Кто-то успел раньше! Обновите список.');
         await loadItems();
       } else if (res.ok) {
-        state.myClaimedIds.add(id);
         await loadItems();
       }
     });
@@ -291,7 +300,6 @@ function attachClaimEvents() {
       const id = btn.dataset.unclaim;
       const res = await api('DELETE', \`/api/items/\${id}/claim\`);
       if (res.ok) {
-        state.myClaimedIds.delete(id);
         await loadItems();
       }
     });
