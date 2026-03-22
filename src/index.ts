@@ -22,8 +22,12 @@ app.use('*', async (c, next) => {
   console.info(`[res] ${method} ${path} → ${c.res.status} (${ms}ms)`)
 })
 
-// Serve the Mini App frontend
-app.get('/', (c) => c.html(INDEX_HTML))
+// Serve the Mini App frontend (cached at edge for 1h, browser for 5min)
+app.get('/', (c) => {
+  return c.html(INDEX_HTML, 200, {
+    'Cache-Control': 'public, max-age=300, s-maxage=3600',
+  })
+})
 
 // Telegram bot webhook (no auth needed — Telegram calls this)
 app.post('/webhook', async (c) => {
